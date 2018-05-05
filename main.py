@@ -32,10 +32,22 @@ nsidir = tmpdir +'/nsi'
 zip_ref = zipfile.ZipFile(dst, 'r')
 zip_ref.extractall(nsidir)
 zip_ref.close()
+# TODO: добавить удаление файла архива
 print("Файлы распакованы в %s" % (nsidir))
+# Поиск папки, содержащей папки REGIONAL и FEDERAL
+from os import walk
+for dirnames in walk(nsidir):
+    position = dirnames[0].find("REGIONAL")
+    if position!=-1:
+        nsiroot = dirnames[0][0:position]
+        print("Путь к папке REGIONAL %s" % (nsiroot))
+        break
+if len(nsidir)==0:
+    print("Ошибка! Папка REGIONAL не найдена.")
+    sys.exit(1)
 
-'''
-# Анализ файлов 
+# Анализ файлов
+print("\n--- Анализ файлов ---\n")
 from xml.etree import ElementTree as ET
 print("Версии справочников:")
 
@@ -46,24 +58,20 @@ xml_reg = {'depart': 'REGIONAL/DEPART.xml',
 xml_fed = {'v002': 'FEDERAL/V002.xml'}
 print("[ Региональные ]")
 for key, value in xml_reg.items():
-    root = ET.parse(nsidir+'/' + value).getroot()
+    root = ET.parse(nsiroot+'/' + value).getroot()
     for zglv in root.iter('zglv'):
         print(key, "\t", zglv.find('date').text)
         break
 print("[ Федеральные ]")
 for key, value in xml_fed.items():
-    root = ET.parse(nsidir+'/' + value).getroot()
+    root = ET.parse(nsiroot+'/' + value).getroot()
     for zglv in root.iter('zglv'):
-        print(key, "\t", zglv.get('date'))
+        print(key, "\t", zglv.find('date').text)
         break
-'''
-
-import configparser
-conf = configparser.RawConfigParser()
 
 
-
-from tables import mkb
-for key in mkb.name:
-    print("%s -> %s" % (key, mkb.name[key]))
-    mkb.getquery(nsidir+'/'+mkb.name[key])
+print("\n--- Работа с таблицами ---\n")
+import tables
+for key in tables.tables:
+    print("Таблица %s -> %s" % (key, tables.tables[key]['path']))
+    print("Запрос для обновления:\n%s" % tables.getquery(nsiroot,key))
