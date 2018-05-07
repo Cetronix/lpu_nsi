@@ -72,6 +72,13 @@ for key, value in xml_fed.items():
 
 print("\n--- Работа с таблицами ---\n")
 import tables
-for key in tables.tables:
-    print("Таблица %s -> %s" % (key, tables.tables[key]['path']))
-    print("Запрос для обновления:\n%s" % tables.getquery(nsiroot,key))
+with open(nsidir+'/update.sql','w') as f:
+    for key in tables.tables:
+        #print("Таблица %s -> %s" % (key, tables.tables[key]['path']))
+        #print("Запрос для обновления:\n%s" % tables.getquery(nsiroot,key))
+        query = "TRUNCARE %s;\n%s\n" % (key,tables.getquery(nsiroot,key))
+        f.write(query)
+
+print("Для обновления запусти: mysql -u demo -p helper < %s" % (nsidir+'/update.sql'))
+
+
