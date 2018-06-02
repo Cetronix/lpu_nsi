@@ -29,3 +29,10 @@ def getquery(rootdir,table):
         FINAL_DATE = STR_TO_DATE(@FINAL_DATE, '%d.%m.%Y'),
         ADD_DATE = STR_TO_DATE(@ADD_DATE, '%d.%m.%Y');'''
     return sql
+
+def getversion(rootdir,table):
+    from xml.etree import ElementTree as ET
+    root = ET.parse(rootdir+tables[table]['path']).getroot()
+    for zglv in root.iter('zglv'):
+        return zglv.find('date').text
+        break

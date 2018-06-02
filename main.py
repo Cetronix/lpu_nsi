@@ -45,40 +45,24 @@ for dirnames in walk(nsidir):
 if len(nsidir)==0:
     print("Ошибка! Папка REGIONAL не найдена.")
     sys.exit(1)
-
-# Анализ файлов
-print("\n--- Анализ файлов ---\n")
-from xml.etree import ElementTree as ET
 print("Версии справочников:")
-
-xml_reg = {'depart': 'REGIONAL/DEPART.xml',
-           'mkb': 'REGIONAL/MKB.xml',
-           'ksg_g': 'REGIONAL/KSG_G.xml',
-           'ksg_g_c': 'REGIONAL/KSG_G_C.xml'}
-xml_fed = {'v002': 'FEDERAL/V002.xml'}
-print("[ Региональные ]")
-for key, value in xml_reg.items():
-    root = ET.parse(nsiroot+'/' + value).getroot()
-    for zglv in root.iter('zglv'):
-        print(key, "\t", zglv.find('date').text)
-        break
-print("[ Федеральные ]")
-for key, value in xml_fed.items():
-    root = ET.parse(nsiroot+'/' + value).getroot()
-    for zglv in root.iter('zglv'):
-        print(key, "\t", zglv.find('date').text)
-        break
-
-
-print("\n--- Работа с таблицами ---\n")
-import tables
+import tables, mysql.connector
+cnx = mysql.connector.connect(user='',password='', host='127.0.0.1', database='')
+cursor = cnx.cursor()
 with open(nsidir+'/update.sql','w') as f:
     for key in tables.tables:
+        query = "SELECT version FROM tables WHERE name='"+key+"'"
+        cursor.execute(query)
+        for (version) in cursor:
+            print("DB: {}".format(version[0]))
+        print("%s\t%s" % (tables.getversion(nsiroot,key),key))
         #print("Таблица %s -> %s" % (key, tables.tables[key]['path']))
         #print("Запрос для обновления:\n%s" % tables.getquery(nsiroot,key))
         query = "TRUNCARE %s;\n%s\n" % (key,tables.getquery(nsiroot,key))
+        query += "UPDATE tables SET version='%s' WHERE name='%s';" % (tables.getversion(nsiroot,key),key)
         f.write(query)
 
 print("Для обновления запусти: mysql -u demo -p helper < %s" % (nsidir+'/update.sql'))
-
+cursor.close()
+cnx.close()
 
