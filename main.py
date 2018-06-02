@@ -47,22 +47,27 @@ if len(nsidir)==0:
     sys.exit(1)
 print("Версии справочников:")
 import tables, mysql.connector
-cnx = mysql.connector.connect(user='',password='', host='127.0.0.1', database='')
+cnx = mysql.connector.connect(user='demo',password='elcefabc', host='127.0.0.1', database='helper')
 cursor = cnx.cursor()
+update=False
 with open(nsidir+'/update.sql','w') as f:
+    print("DataBase\tXML File\tTable")
     for key in tables.tables:
+        TabVerXml = tables.getversion(nsiroot, key)
         query = "SELECT version FROM tables WHERE name='"+key+"'"
         cursor.execute(query)
         for (version) in cursor:
-            print("DB: {}".format(version[0]))
-        print("%s\t%s" % (tables.getversion(nsiroot,key),key))
-        #print("Таблица %s -> %s" % (key, tables.tables[key]['path']))
-        #print("Запрос для обновления:\n%s" % tables.getquery(nsiroot,key))
-        query = "TRUNCARE %s;\n%s\n" % (key,tables.getquery(nsiroot,key))
-        query += "UPDATE tables SET version='%s' WHERE name='%s';" % (tables.getversion(nsiroot,key),key)
-        f.write(query)
-
-print("Для обновления запусти: mysql -u demo -p helper < %s" % (nsidir+'/update.sql'))
+            print("{}\t{}\t{}".format(version[0],TabVerXml,key), end='')
+            if version[0] == TabVerXml:
+                print("\t==")
+            else:
+                print("\t!=")
+                update=True
+                query = "TRUNCARE %s;\n%s\n" % (key,tables.getquery(nsiroot,key))
+                query += "UPDATE tables SET version='%s' WHERE name='%s';" % (tables.getversion(nsiroot,key),key)
+                f.write(query)
+if update==True:
+    print("Для обновления запусти: mysql -u demo -p helper < %s" % (nsidir+'/update.sql'))
 cursor.close()
 cnx.close()
 
