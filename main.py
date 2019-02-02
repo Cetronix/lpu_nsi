@@ -1,30 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import feedparser, sys, re, tempfile
+import sys, re, tempfile
 from grab import Grab
 from urllib.request import urlretrieve
 
 tmpdir = tempfile.mkdtemp()
 
 try:
-    # Загрузка RSS
-    print("Загрузка RSS")
-    rss = feedparser.parse('https://www.orenfoms.ru/documents/rss/')
-    # print('%s -> %s' % (rss.entries[0].title,rss.entries[0].link))
-    # Переход по ссылке
     print('Получение ссылки с сайта')
     g = Grab()
-    g.go(rss.entries[0].link)
+    g.go("https://www.orenfoms.ru/documents/index.php")
     # Собираем ссылку
-    url = 'https://www.orenfoms.ru' + g.doc.select('//*[@id="content"]/div/section/div/section/div/div[2]/p[3]/a').attr(
-        'href')
+    url = 'https://www.orenfoms.ru' + g.doc.select('//*[@id="content"]/div/section/div/section/div/div[2]/div[1]/div[1]/div/div/a').attr('href')
     # Получаем имя файла из URL
+    print("URL: %s" % (url))
     result = re.match(r".*event3=(.*)&.*", url)
+    if result.group(1).upper().find("NSI") == -1:
+        print('Ссылка не содержит НСИ!')
+        sys.exit(1)
     dst = tmpdir+'/'+result.group(1)
     urlretrieve(url, dst)
     print('Файл сохранен как %s' % (dst))
 except:
-    print('Ошибка загрузки RSS/сайт/файл')
+    print('Ошибка загрузки сайта/файла')
     sys.exit(1)
 # Распаковка архива
 import zipfile
@@ -63,7 +61,7 @@ with open(nsidir+'/update.sql','w') as f:
             else:
                 print("\t!=")
                 update=True
-                query = "TRUNCARE %s;\n%s\n" % (key,tables.getquery(nsiroot,key))
+                query = "TRUNCATE %s;\n%s\n" % (key,tables.getquery(nsiroot,key))
                 query += "UPDATE tables SET version='%s' WHERE name='%s';" % (tables.getversion(nsiroot,key),key)
                 f.write(query)
 if update==True:
